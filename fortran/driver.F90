@@ -33,7 +33,7 @@ program driver
 
 
     !> set the parameters of the H-FCL
-    alpha   = 0.1
+    alpha   = 0.3
     R       = 10
 
     !> set the number of spins
@@ -41,33 +41,35 @@ program driver
     n = L**2
 
     !> set the annealing schedule parameters
-    n_beta = 10
+    n_beta = 25
     allocate(betas(n_beta))
     T_max = 10.d0
     exponent = 0.75d0
     n_equil = 100
 
     !> generate the connectivity graph of a square lattice
-    allocate(Jconn(L**2,L**2))
-    allocate(Jproblem(L**2, L**2))
+    allocate(Jconn(n,n))
+    allocate(Jproblem(n, n))
     allocate(h(L**2))
     allocate(solution(L**2))
 
     h = 0
     solution  = 0
+    n_samples = 20
 
-    write(*,*) 'generating 2D lattice. Connectivity matrix'
+    allocate(solutions(n_samples, n))
+
+    write(*,*) 'Generating 2D lattice.'
     call GenerateSquare2DLattice(L, Jconn)
-    do i = 1, n
-        write(*,*) Jconn(i,:)
+    open(unit=4, file = './problems/square_lattice.dat', status = 'unknown', recl=9999)
+    do i = 1,  n
+        write(4,*) Jconn(i,:)
     end do
-    write(*,*)
+    close(4)
 
     !> generate the annealing schedule
     write(*,*) 'Making annealing schedule'
     call MakeExponentialTemperatureShedule( n_beta, betas, exponent, T_max )
-    write(*,*) betas
-    write(*,*)
 
     !> Now generate the problem
     write(*,*) 'Making H-FCL. Hamiltonian:'
@@ -75,7 +77,6 @@ program driver
     call HenFrustratedClusterLoop( n, alpha, R, Jconn, Jproblem )
     do i = 1,  n
         write(1,*) Jproblem(i,:)
-        write(*,*) Jproblem(i,:)
     end do
     close(1)
     write(*,*)
@@ -84,15 +85,22 @@ program driver
     write(*,*) 'Starting simulation'
     !call SimulatedAnnealing( n_beta, betas, n_equil, Jproblem, h, n, solution, delta_Energy )
     call SimulatedAnnealingSampling( n_beta, betas, n_equil, Jproblem, h, n, n_samples, solutions, delta_Energy)
-    write(*,*) 'writing solutions'
+    !write(*,*) 'writing solutions'
     open(unit=2, file='./output/solutions.dat', status='unknown', recl = 9999)
     do i = 1, n_samples
-        write(*,*) solutions(i,:)
+        !write(*,*) solutions(i,:)
         write(2,*) solutions(i,:)
     end do
     close(2)
 
-    open(unit=3 file = './output/energies.dat', status='unknown')
-    write(*,*) ' Energy:', Energy(n, solution, h, Jproblem)
+    open(unit=3, file = './output/energies.dat', status='unknown')
+    do i = 1, n_samples
+        !solution = solutions(i,:)
+        write(3,*) Energy(n, solutions(i,:), h, Jproblem)
+    end do
+    close(3)
+
+    !> here add parallel tempering
+
 
 end program driver

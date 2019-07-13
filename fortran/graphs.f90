@@ -84,6 +84,23 @@ module Graphs
     end subroutine GenerateSquare2DLattice
 
     !---------------------------------------------------------------
+    !>
+    subroutine GenerateSquareChimeraGraph(L, Jconn)
+        implicit none
+        integer, intent(in) :: L                            !< number of unit cells on the side
+        integer, intent(out) :: Jconn((8*L)**2, (8*L)**2)   !< connectivity matrix
 
+        integer :: i, j
+
+        !> initialize connection matrix
+        Jconn = 0
+
+        do i = 1, L
+            do j = 1,L
+
+            end do
+        end do
+
+    end subroutine GenerateSquareChimeraGraph
 
 end module Graphs

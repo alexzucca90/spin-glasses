@@ -11,10 +11,10 @@ endif
 OBJECTS = montecarlo.o problems.o precision.o graphs.o model.o
 DRIVER = driver.F90
 
-default: simulated_annealing
+default: sampler
 
-simulated_annealing: $(OBJECTS) $(DRIVER)
-	$(F90C) $(F90FLAGS) $(OBJECTS) $(DRIVER) -o simulated_annealing
+sampler: $(OBJECTS) $(DRIVER)
+	$(F90C) $(F90FLAGS) $(OBJECTS) $(DRIVER) -o sampler
 
 clean :
 	rm -f *.o *.a *.d *.mod

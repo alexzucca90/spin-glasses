@@ -17,13 +17,13 @@ module MonteCarlo
     !> this subroutine initializes the spins randomly up or down
     subroutine InitializeSpins(n, s)
         implicit none
-        integer, intent(in) :: n    !< number of spins in the state
-        integer, intent (out) :: s  !< spins array
-        integer :: i_s              !< do loop index
-        real(sl) :: rnd             !< random number
+        integer, intent(in) :: n        !< number of spins in the state
+        integer, intent(out) :: s(n)    !< spins array
+        integer :: i_s                  !< do loop index
+        real(sl) :: rnd                 !< random number
 
         do i_s = 1, n
-            write(*,*) rnd
+            call random_number(rnd)
             if ( rnd > 0.5 ) then
                 s( i_s ) = 1
             else
@@ -52,9 +52,16 @@ module MonteCarlo
 
         external deltaEnergy                    !< subroutine to compute the delta energy
         !-------------------------------------------------
-        !   subroutine deltaEnergy(trial_s, s, J, h, dE)
-        !       implicit none
+        !   the deltaEnergy subroutine is structured in this way
         !
+        !   subroutine deltaEnergy(n, s1, s2, J, h, dE)
+        !       implicit none
+        !       integer, intent(in) :: n
+        !       integer, intent(in) :: s1(n), s2(n)
+        !       real(dl), intent(in) :: J(n,n), h(n)
+        !       real(dl), intent(out) :: dE
+        !
+        !        calculate dE
         !
         !   end subroutine deltaEnergy
         !-------------------------------------------------
@@ -84,14 +91,43 @@ module MonteCarlo
 
     end subroutine MetropolisStep
 
+    !---------------------------------------------------------------
+    !> this subroutine swap configurations in Parallel Tempering algorithms
+    subroutine SwapConfigurations(n, s1, s2, beta1, beta2, J, h, deltaEnergy)
+        implicit none
+
+        integer, intent(in) :: n                !< number of spins
+        integer, intent(inout) :: s1(n), s2(n)  !< spin arrays 1 and 2
+        real(dl), intent(in) :: beta1, beta2    !< inverse temperatures 1 and 2
+        real(dl), intent(in) :: J(n,n), h(n)    !< couplings and biases
+
+        external :: deltaEnergy                 !< subroutine that calculates the difference in energy of the two configurations
+
+        real(dl) :: dE
+        real(sl) :: rnd
+        integer :: stemp(n)
+
+        call deltaEnergy(n, s1, s2, J, h, dE)
+
+        call random_number(rnd)
+
+        if ( exp((beta1 - beta2)*dE) .ge. rnd ) then
+            !> swap configurations
+            stemp = s1
+            s1 = s2
+            s2 = stemp
+        end if
+
+    end subroutine SwapConfigurations
+
 
     !---------------------------------------------------------------
     !> this subroutine implements one instance of simulated annealing
     subroutine SimulatedAnnealing(n_beta, betas, n_equil, J, h, n, s, deltaEnergy)
         implicit none
         integer, intent(in) :: n_beta           !< number of annealing points
-        real(dl), intent(in) :: betas(n_beta)    !< annealing schedule
-        integer, intent(in) :: n_equil             !< number of equilibration steps
+        real(dl), intent(in) :: betas(n_beta)   !< annealing schedule
+        integer, intent(in) :: n_equil          !< number of equilibration steps
         integer, intent(in) :: n                !< size of the spin-glass system
         real(dl), intent(in) :: J(n,n), h(n)    !< coupling and biases of the system
         integer, intent(out) :: s(n)            !< spin configuration
@@ -106,18 +142,15 @@ module MonteCarlo
         integer :: i
         real(dl) :: beta
 
-        !write(*,*) 'Setting initial random state:'
+        !> randomly initialize the state
         call InitializeSpins(n, s)
 
 
         !> follow the annealing schedule
-        !write(*,*) 'Starting annealing:'
         do i_beta=1, n_beta
 
             !> select the inverse temperature
             beta = betas( i_beta )
-
-            !write(*,*) '     temperature:', 1.d0/beta
 
             !> equilibrate the system
             do i_equil=1, n_equil
@@ -126,6 +159,7 @@ module MonteCarlo
             end do
 
         end do
+
 
     end subroutine SimulatedAnnealing
 
@@ -151,17 +185,17 @@ module MonteCarlo
 
         do i_sample = 1, n_samples
             !> call the simulated annealing instance
-            call SimulatedAnnealing(n_beta, betas, n_equil, J, h, n, spin, deltaEnergy)
-            spins(i_sample,:) = spin
+            call SimulatedAnnealing(n_beta, betas, n_equil, J, h, n, spins(i_sample,:), deltaEnergy)
         end do
 
     end subroutine SimulatedAnnealingSampling
 
 
     !---------------------------------------------------------------
-    subroutine ParallelTempering(n_replicas, betas, n_sweeps, n_equil, J, h, n, s, deltaEnergy)
+    subroutine ParallelTempering(n, n_replicas, betas, n_sweeps, n_equil, J, h, s, deltaEnergy)
         implicit none
 
+        integer, intent(in) :: n                    !< number of spins
         integer, intent(in) :: n_replicas           !< number of replicas
         real(dl), intent(in) :: betas(n_replicas)   !< temperatures of each replica (last one with smaller temperature)
         integer, intent(in) :: n_sweeps             !< number of PT sweeps
@@ -172,39 +206,51 @@ module MonteCarlo
 
         external :: deltaEnergy                     !< function that computes the energy
 
-        integer :: spins(n_replicas, n)             !<
-        integer :: spin_replica(n)
-        integer :: i, j
-        integer :: i_equil
-        real(dl) :: beta
+        integer :: spins(n_replicas, n)             !< array of all spins
+        integer :: s1(n), s2(n)                     !< spin arrays for single replicas
+        integer :: i, k                             !< indexes for do loops
+        integer :: i_equil                          !< index for equilibration loop
+        real(dl) :: beta1, beta2                    !< inverse temperatures of replicas
 
         !> begin parallel tempering algorithm
         !> initialize the spins
         do i = 1, n_replicas
-            call InitializeSpins(n, spin_replica)
-            spins(i,:) = spin_replica
+            call InitializeSpins(n, s1)
+            spins(i,:) = s1
         end do
 
         do i = 1, n_sweeps
             !> first equilibrate with Metropolis Hastings for each replica
-            do j = 1, n_replicas    !< this can be parallilized
-                spin_replica = spins(j,:)
+            do k = 1, n_replicas    !< this can be parallilized
+                !s1 = spins(k,:)
+                !beta1 = betas(k)
                 do i_equil=1, n_equil
                     !> update the configuration according to the Metropolis-Hastings algorithm
-                    beta = betas
-                    call MetropolisStep( n, spin_replica, J, h, beta, deltaEnergy )
+                    call MetropolisStep( n, spins(k,:), J, h, betas(k), deltaEnergy )
                 end do
-                spins(j,:) = spin_replica
+                !spins(k,:) = s1
             end do
 
             !> swapping configurations
-            do j = 2, n_replicas
+            do k = n_replicas, 2, -1
+
+                !> set up the variables
+                beta1 = betas(k)
+                beta2 = betas(k-1)
+                s1 = spins(k,:)
+                s2 = spins(k-1,:)
+
+                call SwapConfigurations(n, s1, s2, beta1, beta2, J, h, deltaEnergy)
+
+                spins(k,:) = s1
+                spins(k-1,:) = s2
 
             end do
 
         end do
 
-
+        !> solutions (so far, only one solution)
+        s = spins(n_replicas,:)
 
     end subroutine ParallelTempering
 
