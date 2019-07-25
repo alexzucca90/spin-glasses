@@ -17,7 +17,7 @@ module Graphs
     subroutine GenerateSquare2DLattice(L, Jconn)
         implicit none
             integer, intent(in) :: L
-            integer, intent(out) :: Jconn(L**2, L**2)
+            integer, intent(out) :: Jconn(L*L, L*L)
 
             integer :: i, j
 
@@ -84,20 +84,88 @@ module Graphs
     end subroutine GenerateSquare2DLattice
 
     !---------------------------------------------------------------
-    !>
+    !> This subroutine generates the connectivity matrix of a square Chimera graph
     subroutine GenerateSquareChimeraGraph(L, Jconn)
         implicit none
-        integer, intent(in) :: L                            !< number of unit cells on the side
-        integer, intent(out) :: Jconn((8*L)**2, (8*L)**2)   !< connectivity matrix
+        integer, intent(in) :: L                        !< number of unit cells on the side
+        integer, intent(out) :: Jconn(8*L**2, 8*L**2)   !< connectivity matrix
 
-        integer :: i, j
+        integer :: i, j, k
 
         !> initialize connection matrix
         Jconn = 0
 
+        !> start with the intercell connections
         do i = 1, L
-            do j = 1,L
+            !> first line
+            if ( i == 1 ) then
 
+                do k = 1, 4
+                    Jconn(k,8*L+k) = 1                  !< upper left, vertical
+                    Jconn(4+k, 12+k) = 1                !< upper left, horizontal
+                    Jconn(8*L-(8-k), 16*L-(8-k)) = 1    !< upper right, vertical
+                    Jconn(8*L-(k-1), 8*(L-1)-(k-1)) = 1 !< upper right, horizontal
+                end do
+
+
+                do j = 2,L-1
+                    do k = 1, 4
+                        Jconn(8*(j-1)+k, 8*(L+1)+k)=1       !< vertical, down
+                        Jconn(8*(j-1)+4+k, 8*(j-2)+4+k) = 1 !< horizontal, left
+                        Jconn(8*(j-1)+4+k, 8*j+4+k) = 1     !< horizontal, right
+                    end do
+                end do
+
+            !> last line
+            else if ( i == L ) then
+
+                do k = 1, 4
+                    Jconn(8*L*(L-1)+k, 8*L*(L-2)+k ) = 1        !< lower left, vertical
+                    Jconn(8*L*(L-1)+4+k, 8*l*(L-1)+12+k) = 1    !< lower left, horizontal
+                    Jconn(8*L**2-(8-k), 8*L*(L-1)-(8-k)) = 1    !< lower right, veritical
+                    Jconn(8*L**2-(k-1), 8*L**2-8-(k-1)) = 1     !< lower right, horizontal
+                end do
+
+                do j = 2, L-1
+                    do k = 1, 4
+                        Jconn(8*L*(L-1)+8*(j-1)+k, 8*L*(L-2)+8*(j-1)+k) = 1     !< vertical up
+                        Jconn(8*L*(L-1)+8*(j-1)+4+k, 8*L*(L-1)+8*(j-2)+4+k) = 1 !< horizontal, left
+                        Jconn(8*L*(L-1)+8*(j-1)+4+k, 8*L*(L-1)+8*(j)+4+k) = 1   !< horizontal, right
+                    end do
+                end do
+
+            !> bulk
+            else
+
+                do k = 1, 4
+                    Jconn(8*L*(i-1)+k, 8*L*(i-2)+k) = 1     !< left side, vertical up
+                    Jconn(8*L*(i-1)+k, 8*L*(i)+k) = 1       !< left side, vertical down
+                    Jconn(8*L*(i-1)+4+k,8*L*(i-1)+12+k) = 1 !< left side, horizontal right
+                    Jconn(8*L*i-(8-k), 8*L*(i-1)-(8-k)) = 1 !< right side, vertical up
+                    Jconn(8*L*i-(8-k), 8*L*(i+1)-(8-k)) = 1 !< right side, vertical down
+                    Jconn(8*L*i-(k-1), 8*L*i-8-(k-1)) = 1   !< right side, horizontal left
+                end do
+
+                do j = 2,L-1
+                    do k = 1, 4
+                        Jconn(8*L*(i-1)+8*(j-1)+k, 8*L*(i-2)+8*(j-1)+k) = 1     !< vertical, up
+                        Jconn(8*L*(i-1)+8*(j-1)+k, 8*L*(i)+8*(j-1)+k) = 1       !< vertical, down
+                        Jconn(8*L*(i-1)+8*(j-1)+4+k, 8*L*(i-1)+8*(j-2)+4+k) = 1 !< horizontal, left
+                        Jconn(8*L*(i-1)+8*(j-1)+4+k, 8*L*(i-1)+8*(j)+4+k) = 1   !< horizontal, right
+                    end do
+                end do
+
+            end if
+
+        end do
+
+        !> Now add the intra-cell connections
+        do i = 1, L**2
+            do j=1,4
+                do k=1,4
+                    Jconn(8*(i-1)+j, 8*(i-1)+4+k) = 1   !< horizontal-vertical
+                    Jconn(8*(i-1)+4+k, 8*(i-1)+j) = 1   !< vertical-horizontal
+                end do
             end do
         end do
 

@@ -30,7 +30,7 @@ module Model
         Energy = 0.d0
         do i = 1, n
             Energy = Energy - h(i)*s(i)
-            do k=1, n
+            do k=i, n
                 Energy = Energy -  J(i,k)*s(i)*s(k)
             end do
         end do
@@ -71,8 +71,8 @@ module Model
     end subroutine MakeLinearTemperatureSchedule
 
     !---------------------------------------------------------------
-    !> this subroutines generates an exponential annealing schedule
-    subroutine MakeExponentialTemperatureShedule(n_beta, betas, exponent, T_max)
+    !> this subroutines generates an exponential annealing schedule -starting from T max
+    subroutine MakeExponentialTemperatureSheduleMaxMin(n_beta, betas, exponent, T_max)
         implicit none
         integer, intent(in) :: n_beta
         real(dl), intent(out) :: betas(n_beta)
@@ -95,6 +95,34 @@ module Model
             betas(i) = 1.d0 / this_T
         end do
 
-    end subroutine MakeExponentialTemperatureShedule
+    end subroutine MakeExponentialTemperatureSheduleMaxMin
+
+    !---------------------------------------------------------------
+    !> this subroutines generates an exponential annealing schedule starting from T_min
+    subroutine MakeExponentialTemperatureSheduleMinMax(n_beta, betas, exponent, T_min)
+        implicit none
+        integer, intent(in) :: n_beta
+        real(dl), intent(out) :: betas(n_beta)
+        real(dl), intent(in) :: exponent
+        real(dl), intent(in) :: T_min
+
+        real(dl) :: this_T
+        integer :: i
+
+        if (exponent .ge. 1.d0) then
+            write(*,*) 'WARNING: temperature increasing in the schedule'
+            stop
+        end if
+
+        this_T = T_min
+        betas(n_beta) = 1.d0 / this_T
+
+        do i = n_beta - 1, 1, -1
+            this_T = this_T**(1.d0/exponent)
+            betas(i) = 1.d0 / this_T
+        end do
+
+    end subroutine MakeExponentialTemperatureSheduleMinMax
+
 
 end module Model

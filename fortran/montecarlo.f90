@@ -183,16 +183,18 @@ module MonteCarlo
 
         integer :: i_sample
 
+        !$OMP PARAllEl DO DEFAUlT(SHARED),SCHEDUlE(DYNAMIC), PRIVATE(i_sample)
         do i_sample = 1, n_samples
             !> call the simulated annealing instance
             call SimulatedAnnealing(n_beta, betas, n_equil, J, h, n, spins(i_sample,:), deltaEnergy)
         end do
+        !$OMP END PARAllEl DO
 
     end subroutine SimulatedAnnealingSampling
 
 
     !---------------------------------------------------------------
-    subroutine ParallelTempering(n, n_replicas, betas, n_sweeps, n_equil, J, h, s, deltaEnergy)
+    subroutine ParallelTempering(n, n_replicas, betas, n_sweeps, n_burn_in, n_equil, J, h, s, deltaEnergy)
         implicit none
 
         integer, intent(in) :: n                    !< number of spins
@@ -202,7 +204,8 @@ module MonteCarlo
         integer, intent(in) :: n_equil              !< number of steps to equilibrate
         real(dl), intent(in) :: J(n,n)              !< couplings matrix
         real(dl), intent(in) :: h(n)                !< biases matrix
-        real(dl), intent(out) :: s(n)               !< spins solution
+        integer, intent(out) :: s(n_sweeps, n)      !< spins solution
+        integer, intent(in) :: n_burn_in            !< number of burn in steps
 
         external :: deltaEnergy                     !< function that computes the energy
 
@@ -219,8 +222,10 @@ module MonteCarlo
             spins(i,:) = s1
         end do
 
-        do i = 1, n_sweeps
+        do i = 1, n_sweeps+n_burn_in
+
             !> first equilibrate with Metropolis Hastings for each replica
+            !$OMP PARAllEl DO DEFAUlT(SHARED),SCHEDUlE(DYNAMIC), PRIVATE(k)
             do k = 1, n_replicas    !< this can be parallilized
                 !s1 = spins(k,:)
                 !beta1 = betas(k)
@@ -230,6 +235,7 @@ module MonteCarlo
                 end do
                 !spins(k,:) = s1
             end do
+            !$OMP END PARAllEl DO
 
             !> swapping configurations
             do k = n_replicas, 2, -1
@@ -247,10 +253,15 @@ module MonteCarlo
 
             end do
 
+            !> attach the solutions if past burn in
+            if ( i > n_burn_in ) then
+                s(i-n_burn_in,:) = spins(n_replicas,:)
+            end if
+
         end do
 
         !> solutions (so far, only one solution)
-        s = spins(n_replicas,:)
+        !s = spins(n_replicas,:)
 
     end subroutine ParallelTempering
 

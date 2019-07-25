@@ -18,6 +18,7 @@ sampler: $(OBJECTS) $(DRIVER)
 
 clean :
 	rm -f *.o *.a *.d *.mod
+	rm sampler
 
 # OBJECTS instructions
 

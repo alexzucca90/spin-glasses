@@ -16,6 +16,7 @@ module Problems
     !> This subroutine generates a la Hen Frustrated Cluster Loop (H-FCL)
     !   problem Hamiltonian used to benchmark classical
     !   and quantum adiabatic algorithms
+    !   Based on the work in arXiv:1502.01663
     subroutine HenFrustratedClusterLoop(n, alpha, R, Jconn, Jproblem)
         implicit none
         integer, intent(in) :: n                !< number of nodes (spins) of the system
@@ -135,9 +136,9 @@ module Problems
             !> now set the couplings of the loops to one
             do i = start_index+1, end_index
                 if ( loop_path(i-1) < loop_path(i) ) then
-                    Jproblem(loop_path(i-1), loop_path(i)) = Jproblem(loop_path(i-1), loop_path(i)) - 1
+                    Jproblem(loop_path(i-1), loop_path(i)) = Jproblem(loop_path(i-1), loop_path(i)) + 1
                 else
-                    Jproblem(loop_path(i), loop_path(i-1)) = Jproblem(loop_path(i), loop_path(i-1)) - 1
+                    Jproblem(loop_path(i), loop_path(i-1)) = Jproblem(loop_path(i), loop_path(i-1)) + 1
                 end if
             end do
 
@@ -145,9 +146,9 @@ module Problems
             call random_number(rnd)
             index = start_index + int(rnd*(end_index - start_index)) + 1
             if (loop_path(index-1) < loop_path(index)) then
-                Jproblem(loop_path(index-1), loop_path(index)) = Jproblem(loop_path(index-1), loop_path(index)) + 2
+                Jproblem(loop_path(index-1), loop_path(index)) = Jproblem(loop_path(index-1), loop_path(index)) - 2
             else
-                Jproblem(loop_path(index), loop_path(index-1)) = Jproblem(loop_path(index-1), loop_path(index)) + 2
+                Jproblem(loop_path(index), loop_path(index-1)) = Jproblem(loop_path(index-1), loop_path(index)) - 2
             end if
 
         end do
@@ -168,6 +169,7 @@ module Problems
     !> This subroutine generates a la King Frustrated Cluster Loop (K-FCL)
     !   problem Hamiltonian used to benchmark classical
     !   and quantum adiabatic algorithms. K-FCL are used only on the Chimera graph
+    !   Based on arXiv:1502.02098
     subroutine KingFrustratedClusterLoop
         implicit none
     end subroutine KingFrustratedClusterLoop
@@ -180,6 +182,65 @@ module Problems
     subroutine DeceptiveClusterLoop
         implicit none
     end subroutine DeceptiveClusterLoop
+
+    !---------------------------------------------------------------
+    !> This function calculates the number of active spins
+    !function GetActiveSpinsProblem( n, Jproblem, h )
+    !    implicit none
+    !
+    !    integer GetActiveSpinsProblem
+    !    integer :: n
+    !    real(dl) :: Jproblem(n,n)
+    !    real(dl) :: h(n)
+    !
+    !    integer :: i
+    !
+    !    GetActiveSpinsProblem = 0
+    !
+    !    do i = 1, n
+    !        if ( h(i) .ge. 1.d-15 .or. h(i) .le. -1.d-15 ) then
+    !            GetActiveSpinsProblem = GetActiveSpinsProblem + 1
+    !        else if (SUM(Jproblem(i,:)) /= 0) then
+    !            GetActiveSpinsProblem = GetActiveSpinsProblem + 1
+    !        end if
+    !    end do
+    !
+    !end function GetActiveSpinsProblem
+
+    !---------------------------------------------------------------
+    !> This subroutine
+    !subroutine RemoveUnusedSpins( n, nnew, J, h, Jnew, hnew )
+    !    implicit none
+    !
+    !    integer, intent(in) :: n
+    !    integer, intent(in) :: nnew
+    !    real(dl), intent(in) :: J(n,n)
+    !    real(dl), intent(in) :: h(n)
+    !    real(dl), intent(out) :: Jnew(nnew,nnew)
+    !    real(dl), intent(out) :: hnew(nnew, nnew)
+    !
+    !    integer :: active_idx(nnew)
+    !
+    !    integer i, k, v
+    !
+    !    k = 1
+    !    do i = 1, n
+    !        if ( h(i) .ge. 1.d-15 .or. h(i) .le. -1.d-15 ) then
+    !            active_idx(k) = i
+    !            k = k + 1
+    !        else if (SUM(Jproblem(i,:)) /= 0) then
+    !            active_idx(k) = i
+    !            k = k + 1
+    !        end if
+    !    end do
+    !
+    !    do i = 1, nnew-1
+    !        do v = i+1, nnew
+    !
+    !        end do
+    !    end do
+    !
+    !end subroutine RemoveUnusedSpins
 
 
 end module Problems
