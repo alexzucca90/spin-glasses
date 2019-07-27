@@ -110,7 +110,7 @@ module Graphs
 
                 do j = 2,L-1
                     do k = 1, 4
-                        Jconn(8*(j-1)+k, 8*(L+1)+k)=1       !< vertical, down
+                        Jconn(8*(j-1)+k, 8*(L+j-1)+k) = 1   !< vertical, down
                         Jconn(8*(j-1)+4+k, 8*(j-2)+4+k) = 1 !< horizontal, left
                         Jconn(8*(j-1)+4+k, 8*j+4+k) = 1     !< horizontal, right
                     end do

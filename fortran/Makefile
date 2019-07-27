@@ -5,7 +5,7 @@ gfortErr = $(shell which gfortran >/dev/null; echo $$?)
 ifeq "$(gfortErr)" "0"
 F90C = gfortran
 #flags
-F90FLAGS = -O3 -fopenmp -ffast-math -fmax-errors=4 -fbounds-check
+F90FLAGS = -O3 -fopenmp -ffast-math -fmax-errors=4 -Ofast
 endif
 
 OBJECTS = montecarlo.o problems.o precision.o graphs.o model.o
@@ -28,7 +28,7 @@ precision.o : precision.f90
 montecarlo.o: precision.o montecarlo.f90
 	$(F90C) $(F90FLAGS) -c montecarlo.f90 -o montecarlo.o
 
-problems.o : precision.o problems.f90
+problems.o : precision.o graphs.o problems.f90
 	$(F90C) $(F90FLAGS) -c problems.f90 -o problems.o
 
 graphs.o : precision.o graphs.f90

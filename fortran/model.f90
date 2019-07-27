@@ -15,41 +15,48 @@ module Model
     !---------------------------------------------------------------
     !> this function calculates the energy for a spin configuration
     !   and a Hamiltonian
-    function Energy(n, s, h, J)
+    function Energy(n, nc, s, h, J)
 
         implicit none
 
         integer, intent(in) :: n        !< number of spins
-        real(dl), intent(in) :: J(n,n)   !< couplings
+        integer, intent(in) :: nc       !< number of couplings
+        real(dl), intent(in) :: J(nc,3) !< couplings
         real(dl), intent(in) :: h(n)    !< biases
-        integer, intent(in) :: s(n)     !< spin configuration
+        integer, intent(in) ::  s(n)    !< spin configuration
         real(dl) :: Energy              !< energy
 
-        integer :: i, k
+        integer :: i, k, ic !< some indeces
+        real(dl) :: Jik     !< coupling value
 
         Energy = 0.d0
-        do i = 1, n
-            Energy = Energy - h(i)*s(i)
-            do k=i, n
-                Energy = Energy -  J(i,k)*s(i)*s(k)
-            end do
+        Energy = Energy + SUM(h*s)
+        do ic=1, nc
+            i = int(J(ic,1))
+            k = int(J(ic,2))
+            Jik = J(ic,3)
+            Energy = Energy+ Jik*s(i)*s(k)
         end do
+
     end function Energy
+
+
 
     !---------------------------------------------------------------
     !> this subroutine calculates the energy difference between two
     !   spin configurations
-    subroutine delta_Energy(n, s1, s2, J, h, dE)
+    subroutine delta_Energy(n, nc, s1, s2, J, h, dE)
 
         implicit none
 
-        integer, intent(in) :: n
-        integer, intent(in) ::  s1(n), s2(n)
-        real(dl), intent(in) :: J(n,n)
-        real(dl), intent(in) :: h(n)
-        real(dl), intent(out) :: dE
+        integer, intent(in) :: n                !< number of spins
+        integer, intent(in) :: nc               !< number of couplings
+        integer, intent(in) ::  s1(n), s2(n)    !< spins cofigurations
+        real(dl), intent(in) :: J(nc,3)          !< couplings
+        real(dl), intent(in) :: h(n)            !< biases
+        real(dl), intent(out) :: dE             !< delta_energy
 
-        dE = Energy(n, s1, h, J) - Energy(n, s2, h, J)
+        dE = Energy(n, nc, s1, h, J) - Energy(n, nc, s2, h, J)
 
     end subroutine
 
