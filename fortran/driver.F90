@@ -45,7 +45,7 @@ program driver
     T_max       = 10
     T_min       = 0.01
     exponent    = 0.75d0
-    n_equil     = 1
+    n_equil     = 100
 
     !> generate the connectivity graph of a Chimera lattice
     L = 4

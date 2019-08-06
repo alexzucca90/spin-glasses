@@ -231,7 +231,7 @@ module Problems
         ! write edges of graph
         open(unit=1, file='./problems/HFCL_edges_list.dat', status = 'unknown')
         do i = 1, nc
-            write(1,*) int(J(i,1)), int(J(i,2)), J(i, 3)
+            write(1,*) int(J(i,1))-1, int(J(i,2))-1, J(i, 3)
         end do
         close(1)
 

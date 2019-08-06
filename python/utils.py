@@ -43,7 +43,8 @@ def DrawSquareLattice_Problem(L,h,J, outfile=None):
             colors[i] = 'magenta'
     
     plt.scatter(spins_x, spins_y, marker = 'o', color = colors, zorder = 3, s = 50)
-                
+    plt.axis('off')
+    
     if outfile is not None:
         pil.savefig(outfile, bbox_inches='tight')
     plt.show()
@@ -67,6 +68,7 @@ def DrawSquareLattice_Solution(L,spins, outfile=None):
         y = spins_y[i]
         plt.scatter(x, y, marker = marker, color = color, s = 50 )
         
+    plt.axis('off')
     if outfile is not None:
         pil.savefig(outfile, bbox_inches='tight')
         
@@ -96,31 +98,31 @@ def DrawChimeraGraph_Problem(L,h,J,outfile=None):
                         1./6.+centers_y[i],
                         0.5+centers_y[i]] for i in range(L**2)]).flatten()
         
-    # now draw the lines
-    for i in range(8*L*L):
-        for j in range(8*L*L):
-            if J[i,j] != 0 :
-                if J[i,j] > 0:
-                    color = 'red'
-                    lw = 1
+        
+    for i in range(J.shape[0]):
+        if J[i,2] != 0:
+            
+            if J[i,2] > 0:
+                color = 'red'
+                lw = 1
+                ls = '-'
+                z = 2
+            else:
+                if (J[i,2] < 0):
+                    lw = 1.5
                     ls = '-'
-                    z = 2
                 else:
-                    if (J[i,j] <= -1):
-                        lw = 1.5
-                        ls = '-'
-                    else:
-                        lw = 1
-                        ls = '--'
-                                                                                    
-                    color = 'black'
-                    z = 1
-                                                                                            
-                points_x = [spins_x[i],spins_x[j]]
-                points_y = [spins_y[i],spins_y[j]]
-                                                                                            
-                plt.plot(points_x, points_y, color=color, linewidth = lw, linestyle = ls, zorder=z)
+                    lw = 1
+                    ls = '--'
 
+                color = 'black'
+                z = 1
+                
+            points_x = [spins_x[int(J[i,0])],spins_x[int(J[i,1])]]
+            points_y = [spins_y[int(J[i,0])],spins_y[int(J[i,1])]]
+                                                                                            
+            plt.plot(points_x, points_y, color=color, linewidth = lw, linestyle = ls, zorder=z)
+   
     colors = [ 'grey' for i in range(L*L)]
     for i in range(8*L*L):
         if h[i] > 0:
@@ -129,7 +131,8 @@ def DrawChimeraGraph_Problem(L,h,J,outfile=None):
             colors[i] = 'magenta'
 
     plt.scatter(spins_x, spins_y, marker = 'o', color = colors, zorder = 3, s = 50)
-
+    plt.axis('off')
+    
     if outfile is not None:
         pil.savefig(outfile, bbox_inches='tight')
     plt.show()
